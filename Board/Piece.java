@@ -38,7 +38,9 @@ public class Piece {
     /*
     Color:
         0 : Red / AI
-        1 : White / Human-Player 
+        1 : White / Human-Player
+        2 : Green / Empty Square
+        3 : Black / Pit 
     */
 
 } // ends the Piece class
