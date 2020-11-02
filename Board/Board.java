@@ -1,7 +1,9 @@
 package Board;
 
+import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.PriorityQueue;
 import java.util.Random;
 
 /**
@@ -16,6 +18,7 @@ public class Board {
     public Random rand = new Random();                  // randomizer
     public List<int[]> allMoves = new LinkedList<>();   // will be used in order to store all the moves that have taken place
     public int treeDepth = 0;                           // will be the max depth of the minimax tree to look for the next move
+    public int heuToUse = 0;                            // the heuristic for minimax to use
 
     /**
      * This is the constructor of the Board class.
@@ -367,64 +370,37 @@ public class Board {
     } // ends the reverse(I) method
 
     /**
-     * This method will be used in order to find the best move for the specified player (color: red or white)
-     * @param color true = AI , false = Human
+     * This method will be used in order to find the best move for the AI
      * @return an int array of size 4 that holds the next move to make
      */
-    public int[] findNextBestMove(boolean color) {
+    public int[] findNextBestMove() {
         int[] bestMove = new int[4];            // best move to make at the end
         int[] curMove = new int[4];             // current move to look at
         int curMoveVal = Integer.MIN_VALUE;
         int bestMoveVal = Integer.MIN_VALUE;
-        if (color) {    // AI needs new move
-            // get all the AI's pieces and run minimax on each one with specified depth
-            List<int[]> pieces = getCurrentAIPieces();
-            for (int[] piece : pieces) {
-                List<int[]> neighbors = getNeighbors(piece);
-                for (int[] neighbor : neighbors) {
-                    curMove[0] = piece[0];
-                    curMove[1] = piece[1];
-                    curMove[2] = neighbor[0];
-                    curMove[3] = neighbor[1];
-                    if (nextMove(curMove, 0)) { // make AI move, then put into minimax
-                        curMoveVal = minimax(Integer.MIN_VALUE, Integer.MAX_VALUE, color, true, 1 , treeDepth);
-                        reverse();
-                        if (curMoveVal > bestMoveVal) {
-                            bestMoveVal = curMoveVal;
-                            bestMove[0] = curMove[0];
-                            bestMove[1] = curMove[1];
-                            bestMove[2] = curMove[2];
-                            bestMove[3] = curMove[3];
-                        }
+        // get all the AI's pieces and run minimax on each one with specified depth
+        List<int[]> pieces = getCurrentAIPieces();
+        for (int[] piece : pieces) {
+            List<int[]> neighbors = getNeighbors(piece);
+            for (int[] neighbor : neighbors) {
+                curMove[0] = piece[0];
+                curMove[1] = piece[1];
+                curMove[2] = neighbor[0];
+                curMove[3] = neighbor[1];
+                if (nextMove(curMove, 0)) { // make AI move, then put into minimax
+                    curMoveVal = minimax(Integer.MIN_VALUE, Integer.MAX_VALUE, true, 1 , treeDepth);
+                    reverse();
+                    if (curMoveVal > bestMoveVal) {
+                        bestMoveVal = curMoveVal;
+                        bestMove[0] = curMove[0];
+                        bestMove[1] = curMove[1];
+                        bestMove[2] = curMove[2];
+                        bestMove[3] = curMove[3];
                     }
                 }
             }
-            return bestMove;
-        } else {        // Human needs new move
-            // get all the Humans's pieces and run minimax on each one with specified depth
-            List<int[]> pieces = getCurrentHumanPieces();
-            for (int[] piece : pieces) {
-                List<int[]> neighbors = getNeighbors(piece);
-                for (int[] neighbor : neighbors) {
-                    curMove[0] = piece[0];
-                    curMove[1] = piece[1];
-                    curMove[2] = neighbor[0];
-                    curMove[3] = neighbor[1];
-                    if (nextMove(curMove, 1)) { // make Human move, then put into minimax
-                        curMoveVal = minimax(Integer.MIN_VALUE, Integer.MAX_VALUE, color, true, 1 , treeDepth);
-                        reverse();
-                        if (curMoveVal > bestMoveVal) {
-                            bestMoveVal = curMoveVal;
-                            bestMove[0] = curMove[0];
-                            bestMove[1] = curMove[1];
-                            bestMove[2] = curMove[2];
-                            bestMove[3] = curMove[3];
-                        }
-                    }
-                }
-            }
-            return bestMove;
         }
+        return bestMove;
     } // ends the findNextBestMove() method
 
 
@@ -432,123 +408,65 @@ public class Board {
      * This is the maximizer method used to obtain the best move for player using minimax.
      * @param alpha the alpha value
      * @param beta the beta value
-     * @param color represents which player (true = AI, false = human)
      * @param isMaximizer boolean tells us if current player is maximizer or not
      * @param heu the heuristic used to give a value to certain moves at the end
      * @param curDepth the currentDepth of the Search
      * @return
      */
-    public int minimax(int alpha , int beta , boolean color , boolean isMaximizer , int heu , int curDepth) {
-        if (isDone()) {
+    public int minimax(int alpha , int beta , boolean isMaximizer , int heu , int curDepth) {
+        if (isDone() || curDepth == 0) {
             if (heu == 1) {
-                if (isMaximizer) {
-                    return heu1(color);
-                } else {
-                    return heu1(!color);
-                }
+                return A();
+            } else if (heu == 2) {
+                return B();
             }
         }
-        if (curDepth == 0) {
-            if (heu == 1) {
-                if (isMaximizer) {
-                    return heu1(color);
-                } else {
-                    return heu1(!color);
-                }
-            }
-        }
-        if (isMaximizer) {
+        if (isMaximizer) { // it is the AI
             int value = Integer.MIN_VALUE;
-            if (color) {
-                // get all the AI's pieces and run minimax on each one with specified depth
-                List<int[]> pieces = getCurrentAIPieces();
-                for (int[] piece : pieces) {
-                    List<int[]> neighbors = getNeighbors(piece);
-                    for (int[] neighbor : neighbors) {
-                        int[] move = new int[4];
-                        move[0] = piece[0];
-                        move[1] = piece[1];
-                        move[2] = neighbor[0];
-                        move[3] = neighbor[1];
-                        if (nextMove(move, 0)) {
-                            value = Integer.max(value, minimax(alpha, beta, !color, !isMaximizer, 1, curDepth-1));
-                            alpha = Integer.max(alpha, value);
-                            if (alpha >= beta) {
-                                reverse();
-                                return value;
-                            }
+            // get all the AI's pieces and run minimax on each one with specified depth
+            List<int[]> pieces = getCurrentAIPieces();
+            for (int[] piece : pieces) {
+                List<int[]> neighbors = getNeighbors(piece);
+                for (int[] neighbor : neighbors) {
+                    int[] move = new int[4];
+                    move[0] = piece[0];
+                    move[1] = piece[1];
+                    move[2] = neighbor[0];
+                    move[3] = neighbor[1];
+                    if (nextMove(move, 0)) {
+                        int curEval = Integer.max(value, minimax(alpha, beta, !isMaximizer, heu, curDepth-1));
+                        value = Integer.max(value, curEval);
+                        alpha = Integer.max(alpha, curEval);
+                        if (beta <= alpha) {
                             reverse();
+                            return value;
                         }
-                    }
-                }
-            } else {
-                // get all the Human's pieces and run minimax on each one with specified depth
-                List<int[]> pieces = getCurrentHumanPieces();
-                for (int[] piece : pieces) {
-                    List<int[]> neighbors = getNeighbors(piece);
-                    for (int[] neighbor : neighbors) {
-                        int[] move = new int[4];
-                        move[0] = piece[0];
-                        move[1] = piece[1];
-                        move[2] = neighbor[0];
-                        move[3] = neighbor[1];
-                        if (nextMove(move, 1)) {
-                            value = Integer.max(value, minimax(alpha, beta, !color, !isMaximizer, 1, curDepth-1));
-                            alpha = Integer.max(alpha, value);
-                            if (alpha >= beta) {
-                                reverse();
-                                return value;
-                            }
-                            reverse();
-                        }
+                        reverse();
                     }
                 }
             }
             return value;
-        } else {
+        } else { // human
             int value = Integer.MAX_VALUE;
-            if (color) {
-                // get all the AI's pieces and run minimax on each one with specified depth
-                List<int[]> pieces = getCurrentAIPieces();
-                for (int[] piece : pieces) {
-                    List<int[]> neighbors = getNeighbors(piece);
-                    for (int[] neighbor : neighbors) {
-                        int[] move = new int[4];
-                        move[0] = piece[0];
-                        move[1] = piece[1];
-                        move[2] = neighbor[0];
-                        move[3] = neighbor[1];
-                        if (nextMove(move, 0)) {
-                            value = Integer.min(value, minimax(alpha, beta, !color, !isMaximizer, 1, curDepth-1));
-                            beta = Integer.min(beta, value);
-                            if (beta <= alpha) {
-                                reverse();
-                                return value;
-                            }
+            // get all the Humans's pieces and run minimax on each one with specified depth
+            List<int[]> pieces = getCurrentHumanPieces();
+            for (int[] piece : pieces) {
+                List<int[]> neighbors = getNeighbors(piece);
+                for (int[] neighbor : neighbors) {
+                    int[] move = new int[4];
+                    move[0] = piece[0];
+                    move[1] = piece[1];
+                    move[2] = neighbor[0];
+                    move[3] = neighbor[1];
+                    if (nextMove(move, 1)) {
+                        int curEval = Integer.min(value, minimax(alpha, beta, !isMaximizer, heu, curDepth-1));
+                        value = Integer.min(value, curEval);
+                        beta = Integer.min(beta, curEval);
+                        if (beta <= alpha) {
                             reverse();
+                            return value;
                         }
-                    }
-                }
-            } else {
-                // get all the Humans's pieces and run minimax on each one with specified depth
-                List<int[]> pieces = getCurrentHumanPieces();
-                for (int[] piece : pieces) {
-                    List<int[]> neighbors = getNeighbors(piece);
-                    for (int[] neighbor : neighbors) {
-                        int[] move = new int[4];
-                        move[0] = piece[0];
-                        move[1] = piece[1];
-                        move[2] = neighbor[0];
-                        move[3] = neighbor[1];
-                        if (nextMove(move, 1)) {
-                            value = Integer.min(value, minimax(alpha, beta, !color, !isMaximizer, 1, curDepth-1));
-                            beta = Integer.min(beta, value);
-                            if (beta <= alpha) {
-                                reverse();
-                                return value;
-                            }
-                            reverse();
-                        }
+                        reverse();
                     }
                 }
             }
@@ -558,18 +476,29 @@ public class Board {
 
 
     /**
-     * This method is the first heuristic for minimax. The color given is the one that called minimax and is the maximizer.
-     * True = AI, False = Human
-     * @param color boolean value represents the maximizer color
-     * @return the difference in number of pieces between the maximizer and opponent
+     * This method is the first heuristic for minimax.
+     * @return the difference in number of pieces between the AI and human
      */
-    public int heu1(boolean color) {
-        if (color) {    // AI
-            return getNumAIPieces() - getNumManPieces();
-        } else {        // Human
-            return getNumManPieces() - getNumAIPieces();
-        }        
-    } // ends the heu1() method
+    public int A() {
+        return getNumAIPieces() - getNumManPieces();        
+    } // ends the A() method
+
+    public int B() {
+        if (aiHasWon()) {
+            return 100;
+        }
+        if (manHasWon()) {
+            return -100;
+        }
+        if (draw()) {
+            return 50;
+        }
+        if (getNumAIPieces() < getNumManPieces()) {
+            return -50;
+        } else {
+            return 75;
+        }
+    }
 
     /**
      * This method will be used in order to obtain all the AI's Pieces' coordinates.
@@ -625,4 +554,5 @@ public class Board {
         }
         return neighbors;
     } // ends the getNeighbors
+    
 } // this ends the Board class

@@ -15,11 +15,13 @@ public class Player {
         System.out.print("Input Board Size (multiple of 3): ");
         boardSize = sc.nextInt();
         System.out.println();
-        System.out.print("Input Max Tree Depth: ");
-        treeDepth = sc.nextInt();
-        System.out.println();
         board = new Board(boardSize);
-        board.treeDepth = treeDepth;
+        System.out.print("Input Max Tree Depth: ");
+        board.treeDepth = sc.nextInt();
+        System.out.println();
+        System.out.print("Input Which Heurisitc: ");
+        board.heuToUse = sc.nextInt();
+        System.out.println();
         board.printBoard();
 
         int[] move = new int[4];
@@ -31,7 +33,7 @@ public class Player {
                     //move[i] = sc.nextInt();
                 //}
                 System.out.println();
-                move = board.findNextBestMove(true);
+                move = board.findNextBestMove();
                 if (board.nextMove(move, color)) {
                     board.printBoard();
                     color = 1;
@@ -66,13 +68,7 @@ public class Player {
             System.out.println("DRAW!");
         }
         System.out.println();
-
-        //while (board.allMoves.size() > 0) {
-            //board.reverse();
-            //board.printBoard();
-            //System.out.println();
-        //}
-        
+        sc.close();
     } // ends main() method
 
 } // ends the Player class
