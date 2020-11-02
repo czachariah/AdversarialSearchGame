@@ -1,5 +1,7 @@
 package Board;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -9,9 +11,10 @@ import java.util.Random;
 public class Board {
 
     // Global variables
-    public int size;                        // this is the dimension of the board (size x size) ; will be dimension of 3
-    public Piece[][] board;                 // this is the main board that the game will take place on
-    public Random rand = new Random();      // randomizer
+    public int size;                                    // this is the dimension of the board (size x size) ; will be dimension of 3
+    public Piece[][] board;                             // this is the main board that the game will take place on
+    public Random rand = new Random();                  // randomizer
+    public List<int[]> allMoves = new LinkedList<>();   // will be used in order to store all the moves that have taken place
 
     /**
      * This is the constructor of the Board class.
@@ -164,6 +167,17 @@ public class Board {
         if (board[move[2]][move[3]].color == color) { // cannot move into square with one's own piece in it
             return false;
         }
+
+        int[] newMove = new int[8];                     // used to store new move into allMoves
+        newMove[0] = move[0];                           // old x
+        newMove[1] = move[1];                           // old y
+        newMove[2] = board[move[0]][move[1]].type;      // type
+        newMove[3] = board[move[0]][move[1]].color;     // color
+        newMove[4] = move[2];                           // new x
+        newMove[5] = move[3];                           // new y
+        newMove[6] = board[move[2]][move[3]].type;      // type
+        newMove[7] = board[move[2]][move[3]].color;     // color
+        allMoves.add(newMove);
 
         // find the outcome of the move and update the board
         if (moveResult(move) == -1) {           // old piece gets destroyed, new piece stays the same

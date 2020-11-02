@@ -59,6 +59,22 @@ public class Player {
         } else { // draw
             System.out.println("DRAW!");
         }
+        System.out.println();
+
+        while (board.allMoves.size() > 0) {
+            reverse(board);
+            board.printBoard();
+            System.out.println();
+        }
+        
     } // ends main() method
+
+    public static void reverse(Board board) {
+        int[] move = board.allMoves.remove(board.allMoves.size()-1);
+        board.board[move[0]][move[1]].type = move[2];
+        board.board[move[0]][move[1]].color = move[3];
+        board.board[move[4]][move[5]].type = move[6];
+        board.board[move[4]][move[5]].color = move[7];
+    }
 
 } // ends the Player class
