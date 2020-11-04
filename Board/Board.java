@@ -359,6 +359,18 @@ public class Board {
         return num;
     } // ends the getNumManPieces() method
 
+    public int getNumSpecific(int type, int color){
+        int num = 0;
+        for (int i = 0 ; i < size ; ++i) {
+            for (int j = 0 ; j < size ; ++j) {
+                if (board[i][j].color == color && board[i][j].type == type) {
+                    ++num;
+                }
+            }
+        }
+        return num;
+    }
+
     /**
      * This method will be used in order to reverse/undo the last move made on the board.
      */
@@ -422,6 +434,14 @@ public class Board {
                 return A();
             } else if (heu == 2) {
                 return B();
+            } else if (heu == 3) {
+                return C();
+            } else if (heu == 4) {
+                return D();
+            } else if (heu == 5) {
+                return E();
+            } else {
+                return F();
             }
         }
         if (isMaximizer) { // it is the AI
@@ -431,7 +451,7 @@ public class Board {
                 // [1] is col
                 // [2] is heurisitc val
                 public int compare(int[] one, int[] two) {
-                    return Integer.compare(one[4], two[4]);
+                    return Integer.compare(two[4], one[4]);
                 }
             });
 
@@ -455,6 +475,14 @@ public class Board {
                             hVal = A();
                         } else if (heu == 2) {
                             hVal = B();
+                        } else if (heu == 3) {
+                            hVal = C();
+                        } else if (heu == 4) {
+                            hVal = D();
+                        } else if (heu == 5) {
+                            hVal = E();
+                        } else {
+                            hVal = F();
                         }
                         int[] possibleMove = new int[5];
                         possibleMove[0] = move[0];
@@ -478,10 +506,9 @@ public class Board {
                 move[3] = curBestNeighbor[3];
                 nextMove(move, 0);
                 //System.out.println("Pulling: (" + move[0] + " , " + move[1] + ") ==> ("+ move[2] + " , " + move[3] + ")");
-                int curEval = Integer.max(value, minimax(alpha, beta, !isMaximizer, heu, curDepth-1));
-                value = Integer.max(value, curEval);
-                alpha = Integer.max(alpha, curEval);
-                if (beta <= alpha) {
+                value = Integer.max(value, minimax(alpha, beta, !isMaximizer, heu, curDepth-1));
+                alpha = Integer.max(alpha, value);
+                if (alpha >= beta) {
                     reverse();
                     return value;
                 }
@@ -496,7 +523,7 @@ public class Board {
                 // [1] is col
                 // [2] is heurisitc val
                 public int compare(int[] one, int[] two) {
-                    return Integer.compare(one[4], two[4]);
+                    return Integer.compare(two[4], one[4]);
                 }
             });
 
@@ -517,13 +544,21 @@ public class Board {
                             hVal = A();
                         } else if (heu == 2) {
                             hVal = B();
+                        } else if (heu == 3) {
+                            hVal = C();
+                        } else if (heu == 4) {
+                            hVal = D();
+                        } else if (heu == 5) {
+                            hVal = E();
+                        } else {
+                            hVal = F();
                         }
                         int[] possibleMove = new int[5];
                         possibleMove[0] = move[0];
                         possibleMove[1] = move[1];
                         possibleMove[2] = move[2];
                         possibleMove[3] = move[3];
-                        possibleMove[4] = hVal;
+                        possibleMove[4] = -hVal;
                         //System.out.println("Pushing: (" + move[0] + " , " + move[1] + ") ==> ("+ move[2] + " , " + move[3] + ")");
                         nextAvailableMoves.add(possibleMove);
                         reverse();
@@ -539,9 +574,8 @@ public class Board {
                 move[3] = curBestNeighbor[3];
                 nextMove(move, 1);
                 //System.out.println("Pulling: (" + move[0] + " , " + move[1] + ") ==> ("+ move[2] + " , " + move[3] + ")");
-                int curEval = Integer.min(value, minimax(alpha, beta, !isMaximizer, heu, curDepth-1));
-                value = Integer.min(value, curEval);
-                beta = Integer.min(beta, curEval);
+                value = Integer.min(value, minimax(alpha, beta, !isMaximizer, heu, curDepth-1));
+                beta = Integer.min(beta, value);
                 if (beta <= alpha) {
                     reverse();
                     return value;
@@ -577,11 +611,38 @@ public class Board {
             return 0;
         }
         if (getNumAIPieces() < getNumManPieces()) {
-            return -50;
+            return -5;
         } else {
-            return 50;
+            return 5;
         }
     }
+    
+    //heuristic 3 prioritizes wumpus
+    public int C(){
+        return this.getNumSpecific(1, 0) - this.getNumSpecific(1, 1);
+    }
+
+    //heruistic 4 prioritizes hero
+    public int D(){
+        return this.getNumSpecific(2, 0) - this.getNumSpecific(2, 1);
+    }
+
+    //heuristic 5 prioritizes mage
+    public int E(){
+        return this.getNumSpecific(3, 0) - this.getNumSpecific(3, 1);
+    }
+
+    //heuristic 6 returns the max of all previous heuristics
+    public int F(){
+        PriorityQueue<Integer> heap = new PriorityQueue<>((a, b) -> b - a);
+        heap.offer(this.A());
+        heap.offer(this.B());
+        heap.offer(this.C());
+        heap.offer(this.D());
+        heap.offer(this.E());
+        return heap.peek();
+    }
+
 
     /**
      * This method will be used in order to obtain all the AI's Pieces' coordinates.
