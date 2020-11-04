@@ -20,6 +20,7 @@ public class Board {
     public int treeDepth = 0;                           // will be the max depth of the minimax tree to look for the next move
     public int heuToUse = 0;                            // the heuristic for minimax to use
 
+
     /**
      * This is the constructor of the Board class.
      * @param size is the dimension size of the board (must be a multiple of 3)
@@ -381,14 +382,16 @@ public class Board {
         // get all the AI's pieces and run minimax on each one with specified depth
         List<int[]> pieces = getCurrentAIPieces();
         for (int[] piece : pieces) {
+            //System.out.println("Outside: Piece: (" + piece[0] + " , " + piece[1] + ")");
             List<int[]> neighbors = getNeighbors(piece);
             for (int[] neighbor : neighbors) {
+                //System.out.println("Outside: Neighbor: (" + neighbor[0] + " , " + neighbor[1] + ")");
                 curMove[0] = piece[0];
                 curMove[1] = piece[1];
                 curMove[2] = neighbor[0];
                 curMove[3] = neighbor[1];
                 if (nextMove(curMove, 0)) { // make AI move, then put into minimax
-                    curMoveVal = minimax(Integer.MIN_VALUE, Integer.MAX_VALUE, true, 1 , treeDepth);
+                    curMoveVal = minimax(Integer.MIN_VALUE, Integer.MAX_VALUE, true, heuToUse , treeDepth); 
                     reverse();
                     if (curMoveVal > bestMoveVal) {
                         bestMoveVal = curMoveVal;
@@ -413,6 +416,277 @@ public class Board {
      * @param curDepth the currentDepth of the Search
      * @return
      */
+    public int minimax(int alpha , int beta , boolean isMaximizer , int heu , int curDepth) {
+        if (isDone() || curDepth == 0) {
+            if (heu == 1) {
+                return A();
+            } else if (heu == 2) {
+                return B();
+            }
+        }
+        if (isMaximizer) { // it is the AI
+
+            PriorityQueue<int[]> nextAvailableMoves = new PriorityQueue<>(new Comparator<int[]>(){
+                // [0] is row
+                // [1] is col
+                // [2] is heurisitc val
+                public int compare(int[] one, int[] two) {
+                    return Integer.compare(one[4], two[4]);
+                }
+            });
+
+
+            int value = Integer.MIN_VALUE;
+            // get all the AI's pieces and run minimax on each one with specified depth
+            List<int[]> pieces = getCurrentAIPieces();
+            for (int[] piece : pieces) {
+                //System.out.println("Inside: Piece: (" + piece[0] + " , " + piece[1] + ")");
+                List<int[]> neighbors = getNeighbors(piece);
+                for (int[] neighbor : neighbors) {
+                    //System.out.println("Inside: Neighbor: (" + neighbor[0] + " , " + neighbor[1] + ")");
+                    int[] move = new int[4];
+                    move[0] = piece[0];
+                    move[1] = piece[1];
+                    move[2] = neighbor[0];
+                    move[3] = neighbor[1];
+                    if (nextMove(move, 0)) {
+                        int hVal = 0;
+                        if (heu == 1) {
+                            hVal = A();
+                        } else if (heu == 2) {
+                            hVal = B();
+                        }
+                        int[] possibleMove = new int[5];
+                        possibleMove[0] = move[0];
+                        possibleMove[1] = move[1];
+                        possibleMove[2] = move[2];
+                        possibleMove[3] = move[3];
+                        possibleMove[4] = hVal;
+                        //System.out.println("Pushing: (" + move[0] + " , " + move[1] + ") ==> ("+ move[2] + " , " + move[3] + ")");
+                        nextAvailableMoves.add(possibleMove);
+                        reverse();
+                    }
+                } // inner for loop (get neighbors)
+            } // outer for loop (get pieces)
+            //System.out.println("BEFORE HEAP");
+            int[] curBestNeighbor = nextAvailableMoves.poll();
+            while (curBestNeighbor != null) {
+                int[] move = new int[4];
+                move[0] = curBestNeighbor[0];
+                move[1] = curBestNeighbor[1];
+                move[2] = curBestNeighbor[2];
+                move[3] = curBestNeighbor[3];
+                nextMove(move, 0);
+                //System.out.println("Pulling: (" + move[0] + " , " + move[1] + ") ==> ("+ move[2] + " , " + move[3] + ")");
+                int curEval = Integer.max(value, minimax(alpha, beta, !isMaximizer, heu, curDepth-1));
+                value = Integer.max(value, curEval);
+                alpha = Integer.max(alpha, curEval);
+                if (beta <= alpha) {
+                    reverse();
+                    return value;
+                }
+                reverse();
+                curBestNeighbor = nextAvailableMoves.poll();
+            }
+            return value;
+        } else { // human
+
+            PriorityQueue<int[]> nextAvailableMoves = new PriorityQueue<>(new Comparator<int[]>(){
+                // [0] is row
+                // [1] is col
+                // [2] is heurisitc val
+                public int compare(int[] one, int[] two) {
+                    return Integer.compare(one[4], two[4]);
+                }
+            });
+
+            int value = Integer.MAX_VALUE;
+            // get all the Humans's pieces and run minimax on each one with specified depth
+            List<int[]> pieces = getCurrentHumanPieces();
+            for (int[] piece : pieces) {
+                List<int[]> neighbors = getNeighbors(piece);
+                for (int[] neighbor : neighbors) {
+                    int[] move = new int[4];
+                    move[0] = piece[0];
+                    move[1] = piece[1];
+                    move[2] = neighbor[0];
+                    move[3] = neighbor[1];
+                    if (nextMove(move, 1)) {
+                        int hVal = 0;
+                        if (heu == 1) {
+                            hVal = A();
+                        } else if (heu == 2) {
+                            hVal = B();
+                        }
+                        int[] possibleMove = new int[5];
+                        possibleMove[0] = move[0];
+                        possibleMove[1] = move[1];
+                        possibleMove[2] = move[2];
+                        possibleMove[3] = move[3];
+                        possibleMove[4] = hVal;
+                        //System.out.println("Pushing: (" + move[0] + " , " + move[1] + ") ==> ("+ move[2] + " , " + move[3] + ")");
+                        nextAvailableMoves.add(possibleMove);
+                        reverse();
+                    }
+                }
+            }
+            int[] curBestNeighbor = nextAvailableMoves.poll();
+            while (curBestNeighbor != null) {
+                int[] move = new int[4];
+                move[0] = curBestNeighbor[0];
+                move[1] = curBestNeighbor[1];
+                move[2] = curBestNeighbor[2];
+                move[3] = curBestNeighbor[3];
+                nextMove(move, 1);
+                //System.out.println("Pulling: (" + move[0] + " , " + move[1] + ") ==> ("+ move[2] + " , " + move[3] + ")");
+                int curEval = Integer.min(value, minimax(alpha, beta, !isMaximizer, heu, curDepth-1));
+                value = Integer.min(value, curEval);
+                beta = Integer.min(beta, curEval);
+                if (beta <= alpha) {
+                    reverse();
+                    return value;
+                }
+                reverse();
+                curBestNeighbor = nextAvailableMoves.poll();
+            }
+            return value;
+        }
+    } // ends the minimax() method
+
+
+    /**
+     * This method is the first heuristic for minimax.
+     * @return the difference in number of pieces between the AI and human
+     */
+    public int A() {
+        return getNumAIPieces() - getNumManPieces();        
+    } // ends the A() method
+
+    /**
+     * This is the second heurisitc.
+     * @return value
+     */
+    public int B() {
+        if (aiHasWon()) {
+            return 100;
+        }
+        if (manHasWon()) {
+            return -100;
+        }
+        if (draw()) {
+            return 0;
+        }
+        if (getNumAIPieces() < getNumManPieces()) {
+            return -50;
+        } else {
+            return 50;
+        }
+    }
+
+    /**
+     * This method will be used in order to obtain all the AI's Pieces' coordinates.
+     * @return a list of coordinates for all the AI's pieces on the board
+     */
+    public List<int[]> getCurrentAIPieces() {
+        List<int[]> aiPieces = new LinkedList<>();
+        for (int i = 0 ; i < size ; ++i) {
+            for (int j = 0 ; j < size ; ++j) {
+                if (board[i][j].color == 0) {
+                    int[] coords = new int[2];
+                    coords[0] = i;
+                    coords[1] = j;
+                    aiPieces.add(coords);
+                }
+            }
+        }
+        return aiPieces;
+    }// ends the getCurrentAIPieces() method
+
+     /**
+     * This method will be used in order to obtain all the Human's Pieces' coordinates.
+     * @return a list of coordinates for all the Human's pieces on the board
+     */
+    public List<int[]> getCurrentHumanPieces() {
+        List<int[]> manPieces = new LinkedList<>();
+        for (int i = 0 ; i < size ; ++i) {
+            for (int j = 0 ; j < size ; ++j) {
+                if (board[i][j].color == 1) {
+                    int[] coords = new int[2];
+                    coords[0] = i;
+                    coords[1] = j;
+                    manPieces.add(coords);
+                }
+            }
+        }
+        return manPieces;
+    }// ends the getCurrentAIPieces() method
+    
+
+    /**
+     * This method will get all the possible neighbors (squares) that the current piece can move to
+     * @param curPiece
+     * @return
+     */
+    public List<int[]> getNeighbors(int[] curPiece) {
+        List<int[]> neighbors = new LinkedList<>();
+        for (int i = -1 ; i <= 1 ; ++i) {
+             for (int j = -1 ; j <= 1 ; ++j) {
+                if (i == 0 && j == 0) {continue;}
+                int curX = curPiece[0] + i;
+                int curY = curPiece[1] + j;
+                if ((isSquareOnBoard(curX, curY))                                         // valid piece on the board
+                && (isNeighbor(curPiece[0], curPiece[1], curX, curY))                     // the current neighbor is in fact a neighbor
+                && (board[curPiece[0]][curPiece[1]].color != board[curX][curY].color)     // the current neighbor isn't one of your own other pieces
+                && (board[curX][curY].type != 0)                                          // current neighbor is not a pit
+                ) {
+                    int[] coords = new int[2];
+                    coords[0] = curX;
+                    coords[1] = curY;
+                    neighbors.add(coords);
+                }
+             }
+        }
+        return neighbors;
+    } // ends the getNeighbors
+    
+} // this ends the Board class
+
+/* 
+
+public int[] findNextBestMove() {
+        int[] bestMove = new int[4];            // best move to make at the end
+        int[] curMove = new int[4];             // current move to look at
+        int curMoveVal = Integer.MIN_VALUE;
+        int bestMoveVal = Integer.MIN_VALUE;
+        // get all the AI's pieces and run minimax on each one with specified depth
+        List<int[]> pieces = getCurrentAIPieces();
+        for (int[] piece : pieces) {
+            //System.out.println("Piece: (" + piece[0] + " , " + piece[1] + ")");
+            List<int[]> neighbors = getNeighbors(piece);
+            for (int[] neighbor : neighbors) {
+                //System.out.println("Neighbor: (" + neighbor[0] + " , " + neighbor[1] + ")");
+                curMove[0] = piece[0];
+                curMove[1] = piece[1];
+                curMove[2] = neighbor[0];
+                curMove[3] = neighbor[1];
+                if (nextMove(curMove, 0)) { // make AI move, then put into minimax
+                    curMoveVal = minimax(Integer.MIN_VALUE, Integer.MAX_VALUE, true, 1 , treeDepth);
+                    reverse();
+                    if (curMoveVal > bestMoveVal) {
+                        bestMoveVal = curMoveVal;
+                        bestMove[0] = curMove[0];
+                        bestMove[1] = curMove[1];
+                        bestMove[2] = curMove[2];
+                        bestMove[3] = curMove[3];
+                    }
+                }
+            }
+        }
+        return bestMove;
+    } 
+
+
+
     public int minimax(int alpha , int beta , boolean isMaximizer , int heu , int curDepth) {
         if (isDone() || curDepth == 0) {
             if (heu == 1) {
@@ -472,87 +746,6 @@ public class Board {
             }
             return value;
         }
-    } // ends the minimax() method
+    } 
 
-
-    /**
-     * This method is the first heuristic for minimax.
-     * @return the difference in number of pieces between the AI and human
-     */
-    public int A() {
-        return getNumAIPieces() - getNumManPieces();        
-    } // ends the A() method
-
-    public int B() {
-        if (aiHasWon()) {
-            return 100;
-        }
-        if (manHasWon()) {
-            return -100;
-        }
-        if (draw()) {
-            return 50;
-        }
-        if (getNumAIPieces() < getNumManPieces()) {
-            return -50;
-        } else {
-            return 75;
-        }
-    }
-
-    /**
-     * This method will be used in order to obtain all the AI's Pieces' coordinates.
-     * @return a list of coordinates for all the AI's pieces on the board
-     */
-    public List<int[]> getCurrentAIPieces() {
-        List<int[]> aiPieces = new LinkedList<>();
-        for (int i = 0 ; i < size ; ++i) {
-            for (int j = 0 ; j < size ; ++j) {
-                if (board[i][j].color == 0) {
-                    int[] coords = new int[2];
-                    coords[0] = i;
-                    coords[1] = j;
-                    aiPieces.add(coords);
-                }
-            }
-        }
-        return aiPieces;
-    }// ends the getCurrentAIPieces() method
-
-     /**
-     * This method will be used in order to obtain all the Human's Pieces' coordinates.
-     * @return a list of coordinates for all the Human's pieces on the board
-     */
-    public List<int[]> getCurrentHumanPieces() {
-        List<int[]> manPieces = new LinkedList<>();
-        for (int i = 0 ; i < size ; ++i) {
-            for (int j = 0 ; j < size ; ++j) {
-                if (board[i][j].color == 1) {
-                    int[] coords = new int[2];
-                    coords[0] = i;
-                    coords[1] = j;
-                    manPieces.add(coords);
-                }
-            }
-        }
-        return manPieces;
-    }// ends the getCurrentAIPieces() method
-    
-
-    public List<int[]> getNeighbors(int[] curPiece) {
-        List<int[]> neighbors = new LinkedList<>();
-        for (int i = -1 ; i <= 1 ; ++i) {
-             for (int j = -1 ; j <= 1 ; ++j) {
-                if (i == 0 && j == 0) {continue;}
-                if (isSquareOnBoard(i, j) && isNeighbor(curPiece[0], curPiece[1], i, j)) {
-                    int[] coords = new int[2];
-                    coords[0] = i;
-                    coords[1] = j;
-                    neighbors.add(coords);
-                }
-             }
-        }
-        return neighbors;
-    } // ends the getNeighbors
-    
-} // this ends the Board class
+    */
