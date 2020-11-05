@@ -12,7 +12,7 @@ public class Player {
     public static Scanner sc = new Scanner(System.in);  // scanner for input
 
     public static void main(String[] args) {
-        System.out.print("Input Board Size (multiple of 3): ");
+        System.out.print("Input Board Size (Multiple of 3): ");
         boardSize = sc.nextInt();
         System.out.println();
         board = new Board(boardSize);
